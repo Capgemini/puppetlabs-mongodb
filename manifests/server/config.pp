@@ -45,6 +45,8 @@ class mongodb::server::config {
   $quiet           = $mongodb::server::quiet
   $slowms          = $mongodb::server::slowms
   $keyfile         = $mongodb::server::keyfile
+  $key             = $mongodb::server::key
+  $ipv6            = $mongodb::server::ipv6
   $bind_ip         = $mongodb::server::bind_ip
   $directoryperdb  = $mongodb::server::directoryperdb
   $profile         = $mongodb::server::profile
@@ -90,6 +92,16 @@ class mongodb::server::config {
     }
     else {
       $noauth = true
+    }
+    if $keyfile and $key {
+      validate_string($key)
+      validate_re($key,'.{6}')
+      file { $keyfile:
+        content => $key,
+        owner   => $user,
+        group   => $group,
+        mode    => '0400',
+      }
     }
 
     #Pick which config content to use

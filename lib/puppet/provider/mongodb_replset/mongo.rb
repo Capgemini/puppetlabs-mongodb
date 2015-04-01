@@ -2,7 +2,8 @@
 # Author: François Charlier <francois.charlier@enovance.com>
 #
 
-Puppet::Type.type(:mongodb_replset).provide(:mongo) do
+require File.expand_path(File.join(File.dirname(__FILE__), '..', 'mongodb'))
+Puppet::Type.type(:mongodb_replset).provide(:mongo, :parent => Puppet::Provider::Mongodb) do
 
   desc "Manage hosts members for a replicaset."
 
@@ -85,6 +86,14 @@ Puppet::Type.type(:mongodb_replset).provide(:mongo) do
     mongo_command("rs.remove(\"#{host}\")", master)
   end
 
+  def rs_arbiter
+    @resource[:arbiter]
+  end
+
+  def rs_add_arbiter(host, master)
+    mongo_command("rs.addArb(\"#{host}\")", master)
+  end
+
   def master_host(hosts)
     hosts.each do |host|
       status = db_ismaster(host)
@@ -102,41 +111,6 @@ Puppet::Type.type(:mongodb_replset).provide(:mongo) do
       file = '/etc/mongodb.conf'
     end
     file
-  end
-
-  def self.get_conn_string
-    # TODO (spredzy) : Dirty hack
-    # to make the rs.conf() run on
-    # the proper mongodb connection
-    # Since we don't have access to
-    # instance properties at this time.
-    hash = {}
-    File.open(get_mongod_conf_file) do |fp|
-      fp.each do |line|
-        if !line.start_with?('#')
-          key, value = line.chomp.split(/\s*=\s*/)
-          hash[key] = value
-        end
-      end
-    end
-
-    if hash['bind_ip'] and ! hash['bind_ip'].eql? '0.0.0.0'
-      ip_real = hash['bind_ip']
-    else
-      ip_real = '127.0.0.1'
-    end
-
-    if hash['port']
-      port_real = hash['port']
-    elsif !hash['port'] and hash['configsvr']
-      port_real = 27019
-    elsif !hash['port'] and hash['shardsvr']
-      port_real = 27018
-    else
-      port_real = 27017
-    end
-
-    "#{ip_real}:#{port_real}"
   end
 
   def self.get_replset_properties
@@ -174,10 +148,10 @@ Puppet::Type.type(:mongodb_replset).provide(:mongo) do
           end
 
           # This node is alive and supposed to be a member of our set
-          Puppet.debug "Host #{self.name} is available for replset #{status['set']}"
+          Puppet.debug "Host #{host} is available for replset #{status['set']}"
           true
         elsif status.has_key?('info')
-          Puppet.debug "Host #{self.name} is alive but unconfigured: #{status['info']}"
+          Puppet.debug "Host #{host} is alive but unconfigured: #{status['info']}"
           true
         end
       rescue Puppet::ExecutionFailure
@@ -214,7 +188,11 @@ Puppet::Type.type(:mongodb_replset).provide(:mongo) do
 
       # Create a replset configuration
       hostconf = alive_hosts.each_with_index.map do |host,id|
-        "{ _id: #{id}, host: \"#{host}\" }"
+        arbiter_conf = ""
+        if rs_arbiter == host
+          arbiter_conf = ", arbiterOnly: \"true\""
+        end
+        "{ _id: #{id}, host: \"#{host}\"#{arbiter_conf} }"
       end.join(',')
       conf = "{ _id: \"#{self.name}\", members: [ #{hostconf} ] }"
 
@@ -227,9 +205,15 @@ Puppet::Type.type(:mongodb_replset).provide(:mongo) do
       # Add members to an existing replset
       if master = master_host(alive_hosts)
         current_hosts = db_ismaster(master)['hosts']
+        Puppet.debug "Current Hosts are: #{current_hosts.inspect}"
         newhosts = alive_hosts - current_hosts
         newhosts.each do |host|
-          output = rs_add(host, master)
+          output = {}
+          if rs_arbiter == host
+            output = rs_add_arbiter(host, master)
+          else
+            output = rs_add(host, master)
+          end
           if output['ok'] == 0
             raise Puppet::Error, "rs.add() failed to add host to replicaset #{self.name}: #{output['errmsg']}"
           end

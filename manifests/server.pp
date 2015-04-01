@@ -20,6 +20,7 @@ class mongodb::server (
 
   $logpath         = $mongodb::params::logpath,
   $bind_ip         = $mongodb::params::bind_ip,
+  $ipv6            = undef,
   $logappend       = true,
   $fork            = $mongodb::params::fork,
   $port            = undef,
@@ -55,6 +56,7 @@ class mongodb::server (
   $quiet           = undef,
   $slowms          = undef,
   $keyfile         = undef,
+  $key             = undef,
   $set_parameter   = undef,
   $syslog          = undef,
   $config_content  = undef,

@@ -179,6 +179,10 @@ This setting can be used to override the default MongoDB user group to be used
 for related files in the file system. If not specified, the module will use
 the default for your OS distro.
 
+#####`ipv6`
+This setting is used to configure MongoDB to turn on ipv6 support. If not specified
+and ipv6 address is passed to MongoDB bind_ip it will just fail.
+
 #####`bind_ip`
 This setting can be used to configure MonogDB process to bind to and listen
 for connections from applications on this address. If not specified, the
@@ -216,6 +220,10 @@ If not specified, the module will use the default for your OS distro.
 Specify the path to a file name for the log file that will hold all diagnostic
 logging information. Unless specified, mongod will output all log information
 to the standard output.
+
+#####`ipv6`
+This setting has to be true to configure MongoDB to turn on ipv6 support. If not specified
+and ipv6 address is passed to MongoDB bind_ip it will just fail.
 
 #####`bind_ip`
 Set this option to configure the mongod or mongos process to bind to and listen
@@ -369,6 +377,10 @@ Default: 100 ms
 
 #####`keyfile`
 Specify the path to a key file to store authentication information. This option
+is only useful for the connection between replica set members. Default: None
+
+#####'key'
+Specify the key contained within the keyfile. This option
 is only useful for the connection between replica set members. Default: None
 
 #####`master`
