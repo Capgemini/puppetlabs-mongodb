@@ -7,6 +7,7 @@ class mongodb::server (
 
   $config           = $mongodb::params::config,
   $dbpath           = $mongodb::params::dbpath,
+  $wiredtiger       = true,
   $pidfilepath      = $mongodb::params::pidfilepath,
 
   $service_provider = $mongodb::params::service_provider,
@@ -22,6 +23,7 @@ class mongodb::server (
   $bind_ip         = $mongodb::params::bind_ip,
   $ipv6            = undef,
   $logappend       = true,
+  $logrotate       = rename,
   $fork            = $mongodb::params::fork,
   $port            = undef,
   $journal         = $mongodb::params::journal,
@@ -63,6 +65,7 @@ class mongodb::server (
   $ssl             = undef,
   $ssl_key         = undef,
   $ssl_ca          = undef,
+  $restart         = $mongodb::params::restart,
   $options         = undef,
 
   # Deprecated parameters
@@ -78,11 +81,21 @@ class mongodb::server (
   }
 
   if ($ensure == 'present' or $ensure == true) {
-    anchor { 'mongodb::server::start': }->
-    class { 'mongodb::server::install': }->
-    class { 'mongodb::server::config': }->
-    class { 'mongodb::server::service': }->
-    anchor { 'mongodb::server::end': }
+    if $restart {
+      anchor { 'mongodb::server::start': }->
+      class { 'mongodb::server::install': }->
+      # If $restart is true, notify the service on config changes (~>)
+      class { 'mongodb::server::config': }~>
+      class { 'mongodb::server::service': }->
+      anchor { 'mongodb::server::end': }
+    } else {
+      anchor { 'mongodb::server::start': }->
+      class { 'mongodb::server::install': }->
+      # If $restart is false, config changes won't restart the service (->)
+      class { 'mongodb::server::config': }->
+      class { 'mongodb::server::service': }->
+      anchor { 'mongodb::server::end': }
+    }
   } else {
     anchor { 'mongodb::server::start': }->
     class { 'mongodb::server::service': }->

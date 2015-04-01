@@ -7,9 +7,11 @@ class mongodb::server::config {
   $config_content  = $mongodb::server::config_content
 
   $dbpath          = $mongodb::server::dbpath
+  $wiredtiger      = $mongodb::server::wiredtiger
   $pidfilepath     = $mongodb::server::pidfilepath
   $logpath         = $mongodb::server::logpath
   $logappend       = $mongodb::server::logappend
+  $logrotate       = $mongodb::server::rotate
   $fork            = $mongodb::server::fork
   $port            = $mongodb::server::port
   $journal         = $mongodb::server::journal
@@ -68,7 +70,6 @@ class mongodb::server::config {
     mode    => '0644',
     owner   => 'root',
     group   => 'root',
-    notify  => Class['mongodb::server::service']
   }
 
   if ($logpath) {
@@ -109,6 +110,8 @@ class mongodb::server::config {
       $cfg_content = $config_content
     } elsif (versioncmp($mongodb::globals::version, '2.6.0') >= 0) {
       $cfg_content = template('mongodb/mongodb.conf.2.6.erb')
+    } elsif (versioncmp($mongodb::globals::version, '3.0.0') >= 0) {
+      $cfg_content = template('mongodb/mongodb.conf.3.0.erb')
     } else {
       $cfg_content = template('mongodb/mongodb.conf.erb')
     }

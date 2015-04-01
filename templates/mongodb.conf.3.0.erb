@@ -8,6 +8,9 @@ systemLog.destination: file
 <% if @logappend -%>
 systemLog.logAppend: <%= @logappend %>
 <% end -%>
+<% if @logrotate -%>
+systemLog.logRotate: <%= @logrotate %>
+<% end -%>
 <% elsif @syslog -%>
 systemLog.destination: syslog
 <% end -%>
@@ -38,6 +41,11 @@ processManagement.pidFilePath: <%= @pidfilepath %>
 
 #Storage
 storage.dbPath: <%= @dbpath %>
+<% if @wiredtiger -%>
+storage.engine: wiredTiger
+<% else -%>
+storage.engine: mmapv1
+<% end -%>
 <% if @nojournal -%>
 storage.journal.enabled: false
 <% elsif @journal -%>
@@ -71,6 +79,7 @@ security.authorization: disabled
 <% end -%>
 <% if @keyfile -%>
 security.keyFile: <%= @keyfile %>
+security.clusterAuthMode: keyFile
 <% end -%>
 <% if @noscripting -%>
 security.javascriptEnabled: <%= @noscripting %>
