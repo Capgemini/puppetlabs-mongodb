@@ -76,7 +76,7 @@ class mongodb::server::config {
     file { $logpath:
       ensure  => present,
       recurse => true,
-      mode    => '0755',
+      mode    => '0644',
       owner   => $user,
       group   => $group,
       require => Package[$package_name]
